@@ -924,6 +924,16 @@ function ECL:OnInitialize()
         }
     }, true)
 
+    local _eclSV = _G["EllesmereUICursorDB"]
+    if _eclSV and not _eclSV._liteMigrated then
+        self.db:ResetProfile()
+        _eclSV._liteMigrated = true
+    end
+    if _eclSV and not _eclSV._liteMigrated2 then
+        self.db:ResetProfile()
+        _eclSV._liteMigrated2 = true
+    end
+
     -- Expose for EUI_CursorLite_Options.lua
     _G._ECL_AceDB = self.db
     _G._ECL_Apply = Apply

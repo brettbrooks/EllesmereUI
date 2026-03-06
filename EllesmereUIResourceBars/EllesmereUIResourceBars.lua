@@ -2839,6 +2839,12 @@ function ERB:OnInitialize()
         self.db:ResetProfile()
         sv._liteMigrated = true
     end
+    -- Second migration pass: clears any remaining corrupt state from the first
+    -- migration that left sub-tables in a bad state for some users.
+    if sv and not sv._liteMigrated2 then
+        self.db:ResetProfile()
+        sv._liteMigrated2 = true
+    end
 
     _G._ERB_AceDB = self.db
     _G._ERB_Apply = function() ERB:ApplyAll() end

@@ -4567,6 +4567,15 @@ function ECME:OnInitialize()
     end
 
     self.db = EllesmereUI.Lite.NewDB("EllesmereUICooldownManagerDB", DEFAULTS, true)
+    local _ecmeSV = _G["EllesmereUICooldownManagerDB"]
+    if _ecmeSV and not _ecmeSV._liteMigrated then
+        self.db:ResetProfile()
+        _ecmeSV._liteMigrated = true
+    end
+    if _ecmeSV and not _ecmeSV._liteMigrated2 then
+        self.db:ResetProfile()
+        _ecmeSV._liteMigrated2 = true
+    end
 
     -- Migration: enable showStackCount on the buffs bar (was false by default)
     do

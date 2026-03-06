@@ -3706,6 +3706,15 @@ function EAB:OnInitialize()
         or (rawDB.profiles and not rawDB.profiles.Default)
 
     self.db = EllesmereUI.Lite.NewDB("EllesmereUIActionBarsDB", defaults, true)
+    local _eabSV = _G["EllesmereUIActionBarsDB"]
+    if _eabSV and not _eabSV._liteMigrated then
+        self.db:ResetProfile()
+        _eabSV._liteMigrated = true
+    end
+    if _eabSV and not _eabSV._liteMigrated2 then
+        self.db:ResetProfile()
+        _eabSV._liteMigrated2 = true
+    end
 
     -- Mark whether we need to capture Blizzard layout on first login.
     -- The actual capture is deferred to PLAYER_ENTERING_WORLD when

@@ -5853,6 +5853,15 @@ function EllesmereUF:OnInitialize()
     end
 
     db = EllesmereUI.Lite.NewDB("EllesmereUIUnitFramesDB", defaults, true)
+    local _ufSV = _G["EllesmereUIUnitFramesDB"]
+    if _ufSV and not _ufSV._liteMigrated then
+        db:ResetProfile()
+        _ufSV._liteMigrated = true
+    end
+    if _ufSV and not _ufSV._liteMigrated2 then
+        db:ResetProfile()
+        _ufSV._liteMigrated2 = true
+    end
     MigratePlayerTarget()
     -- Migrate old use3DPortrait boolean to new portraitMode string (one-time)
     do
