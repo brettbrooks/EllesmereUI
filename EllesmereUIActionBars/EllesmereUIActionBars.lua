@@ -4161,6 +4161,32 @@ function EAB:FinishSetup()
         end)
     end
 
+    -- When UIParent's scale changes, the coordinate space shifts. Re-save
+    -- all bar positions from their current frame anchors (which WoW has
+    -- already adjusted) so the DB stays in sync with the new scale.
+    do
+        local _scaleFrame = CreateFrame("Frame")
+        _scaleFrame:RegisterEvent("UI_SCALE_CHANGED")
+        _scaleFrame:SetScript("OnEvent", function()
+            if InCombatLockdown() then return end
+            local positions = EAB.db.profile.barPositions
+            if not positions then return end
+            for _, info in ipairs(BAR_CONFIG) do
+                local key = info.key
+                local frame = barFrames[key]
+                if frame and positions[key] then
+                    local pt, _, rpt, px, py = frame:GetPoint(1)
+                    if pt then
+                        positions[key].point    = pt
+                        positions[key].relPoint = rpt
+                        positions[key].x        = px
+                        positions[key].y        = py
+                    end
+                end
+            end
+        end)
+    end
+
     -- Register events
     local _bindDeferFrame
     self:RegisterEvent("UPDATE_BINDINGS", function()

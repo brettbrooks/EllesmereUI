@@ -4959,7 +4959,6 @@ function EllesmereUI:GetScrollFrame() return scrollFrame end
 function EllesmereUI:GetActivePage() return activePage end
 
 --- Apply a user-defined panel scale on top of the pixel-perfect base scale.
---- Apply a user-defined panel scale on top of the pixel-perfect base scale.
 --- @param userScale number  multiplier (1.0 = default, 0.5–1.5 range)
 do
     local scaleAnimFrame = CreateFrame("Frame")
@@ -5007,7 +5006,7 @@ end
 -------------------------------------------------------------------------------
 --  Slash commands
 -------------------------------------------------------------------------------
-EllesmereUI.VERSION = "3.3.5"
+EllesmereUI.VERSION = "3.4"
 
 -- Register this addon's version into a shared global table (taint-free at load time)
 if not _G._EUI_AddonVersions then _G._EUI_AddonVersions = {} end

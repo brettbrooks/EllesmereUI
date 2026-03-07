@@ -234,7 +234,7 @@ end
 
 
 -------------------------------------------------------------------------------
---  Defaults — per-element scale, border, colors, text, alerts
+--  Defaults ï¿½ per-element scale, border, colors, text, alerts
 -------------------------------------------------------------------------------
 local _, playerClassFile = UnitClass("player")
 local playerCC = CLASS_COLORS[playerClassFile] or { 0.15, 0.75, 0.30 }
@@ -418,7 +418,7 @@ local function ApplyBarOrientation(bar, orientation)
 end
 
 -------------------------------------------------------------------------------
---  Pixel-perfect border helper — supports variable thickness via size param
+--  Pixel-perfect border helper ï¿½ supports variable thickness via size param
 --  Uses PixelUtil for positioning and disables pixel snapping AFTER
 --  SetColorTexture (WoW re-enables snapping on color/texture changes).
 -------------------------------------------------------------------------------
@@ -692,18 +692,18 @@ local function RegisterUnlockElements()
         savePosition = function(_, point, relPoint, x, y, scale)
             if not point then return end
             local hp = ERB.db.profile.health
-            hp.unlockPos = { point = point, relPoint = relPoint or point, x = x, y = y }
+            hp.unlockPos = { point = point, relPoint = relPoint or point, x = x, y = y, scale = scale }
             if scale then hp.scale = scale end
             if healthBar then
+                if scale then pcall(function() healthBar:SetScale(scale) end) end
                 healthBar:ClearAllPoints()
                 healthBar:SetPoint(point, UIParent, relPoint or point, x, y)
-                if scale then healthBar:SetScale(scale) end
             end
         end,
         loadPosition = function()
             local pos = ERB.db.profile.health.unlockPos
             if not pos then return nil end
-            return { point = pos.point, relPoint = pos.relPoint or pos.point, x = pos.x, y = pos.y }
+            return { point = pos.point, relPoint = pos.relPoint or pos.point, x = pos.x, y = pos.y, scale = pos.scale }
         end,
         clearPosition = function()
             local hp = ERB.db.profile.health
@@ -719,9 +719,10 @@ local function RegisterUnlockElements()
             local pos = hp.unlockPos
             if not pos then return end
             if healthBar then
+                local sc = pos.scale or hp.scale or 1
+                pcall(function() healthBar:SetScale(sc) end)
                 healthBar:ClearAllPoints()
                 healthBar:SetPoint(pos.point, UIParent, pos.relPoint or pos.point, pos.x, pos.y)
-                healthBar:SetScale(hp.scale or 1)
             end
         end,
     }
@@ -743,18 +744,18 @@ local function RegisterUnlockElements()
         savePosition = function(_, point, relPoint, x, y, scale)
             if not point then return end
             local pp = ERB.db.profile.primary
-            pp.unlockPos = { point = point, relPoint = relPoint or point, x = x, y = y }
+            pp.unlockPos = { point = point, relPoint = relPoint or point, x = x, y = y, scale = scale }
             if scale then pp.scale = scale end
             if primaryBar then
+                if scale then pcall(function() primaryBar:SetScale(scale) end) end
                 primaryBar:ClearAllPoints()
                 primaryBar:SetPoint(point, UIParent, relPoint or point, x, y)
-                if scale then primaryBar:SetScale(scale) end
             end
         end,
         loadPosition = function()
             local pos = ERB.db.profile.primary.unlockPos
             if not pos then return nil end
-            return { point = pos.point, relPoint = pos.relPoint or pos.point, x = pos.x, y = pos.y }
+            return { point = pos.point, relPoint = pos.relPoint or pos.point, x = pos.x, y = pos.y, scale = pos.scale }
         end,
         clearPosition = function()
             local pp = ERB.db.profile.primary
@@ -770,9 +771,10 @@ local function RegisterUnlockElements()
             local pos = pp.unlockPos
             if not pos then return end
             if primaryBar then
+                local sc = pos.scale or pp.scale or 1
+                pcall(function() primaryBar:SetScale(sc) end)
                 primaryBar:ClearAllPoints()
                 primaryBar:SetPoint(pos.point, UIParent, pos.relPoint or pos.point, pos.x, pos.y)
-                primaryBar:SetScale(pp.scale or 1)
             end
         end,
     }
@@ -798,43 +800,18 @@ local function RegisterUnlockElements()
         savePosition = function(_, point, relPoint, x, y, scale)
             if not point then return end
             local sp = ERB.db.profile.secondary
-            -- For pip-based bars, normalize to CENTER so position stays valid
-            -- if pip count changes (which alters total bar width).
-            local isBarType = cachedSecondary and cachedSecondary.type == "bar"
-            if not isBarType and secondaryFrame then
-                -- Convert the given anchor to a CENTER-relative offset
-                local cx, cy = secondaryFrame:GetCenter()
-                local uiScale = UIParent:GetEffectiveScale()
-                local fScale  = secondaryFrame:GetEffectiveScale()
-                if cx and cy then
-                    local screenCX = cx * fScale / uiScale
-                    local screenCY = cy * fScale / uiScale
-                    local uiW = UIParent:GetWidth()
-                    local uiH = UIParent:GetHeight()
-                    sp.unlockPos = {
-                        point    = "CENTER",
-                        relPoint = "CENTER",
-                        x        = screenCX - uiW / 2,
-                        y        = screenCY - uiH / 2,
-                    }
-                else
-                    sp.unlockPos = { point = point, relPoint = relPoint or point, x = x, y = y }
-                end
-            else
-                sp.unlockPos = { point = point, relPoint = relPoint or point, x = x, y = y }
-            end
+            sp.unlockPos = { point = point, relPoint = relPoint or point, x = x, y = y, scale = scale }
             if scale then sp.scale = scale end
             if secondaryFrame then
+                if scale then pcall(function() secondaryFrame:SetScale(scale) end) end
                 secondaryFrame:ClearAllPoints()
-                local pos = sp.unlockPos
-                secondaryFrame:SetPoint(pos.point, UIParent, pos.relPoint or pos.point, pos.x or 0, pos.y or 0)
-                if scale then secondaryFrame:SetScale(scale) end
+                secondaryFrame:SetPoint(point, UIParent, relPoint or point, x, y)
             end
         end,
         loadPosition = function()
             local pos = ERB.db.profile.secondary.unlockPos
             if not pos then return nil end
-            return { point = pos.point, relPoint = pos.relPoint or pos.point, x = pos.x, y = pos.y }
+            return { point = pos.point, relPoint = pos.relPoint or pos.point, x = pos.x, y = pos.y, scale = pos.scale }
         end,
         clearPosition = function()
             local sp = ERB.db.profile.secondary
@@ -850,9 +827,10 @@ local function RegisterUnlockElements()
             local pos = sp.unlockPos
             if not pos then return end
             if secondaryFrame then
+                local sc = pos.scale or sp.scale or 1
+                pcall(function() secondaryFrame:SetScale(sc) end)
                 secondaryFrame:ClearAllPoints()
                 secondaryFrame:SetPoint(pos.point, UIParent, pos.relPoint or pos.point, pos.x or 0, pos.y or 0)
-                secondaryFrame:SetScale(sp.scale or 1)
             end
         end,
     }
@@ -874,18 +852,18 @@ local function RegisterUnlockElements()
         savePosition = function(_, point, relPoint, x, y, scale)
             if not point then return end
             local cb = ERB.db.profile.castBar
-            cb.unlockPos = { point = point, relPoint = relPoint or point, x = x, y = y }
+            cb.unlockPos = { point = point, relPoint = relPoint or point, x = x, y = y, scale = scale }
             if scale then cb.scale = scale end
             if castBarFrame then
+                if scale then pcall(function() castBarFrame:SetScale(scale) end) end
                 castBarFrame:ClearAllPoints()
                 castBarFrame:SetPoint(point, UIParent, relPoint or point, x, y)
-                if scale then castBarFrame:SetScale(scale) end
             end
         end,
         loadPosition = function()
             local pos = ERB.db.profile.castBar.unlockPos
             if not pos then return nil end
-            return { point = pos.point, relPoint = pos.relPoint or pos.point, x = pos.x, y = pos.y }
+            return { point = pos.point, relPoint = pos.relPoint or pos.point, x = pos.x, y = pos.y, scale = pos.scale }
         end,
         clearPosition = function()
             local cb = ERB.db.profile.castBar
@@ -897,9 +875,10 @@ local function RegisterUnlockElements()
             local pos = cb.unlockPos
             if not pos then return end
             if castBarFrame then
+                local sc = pos.scale or cb.scale or 1
+                pcall(function() castBarFrame:SetScale(sc) end)
                 castBarFrame:ClearAllPoints()
                 castBarFrame:SetPoint(pos.point, UIParent, pos.relPoint or pos.point, pos.x, pos.y)
-                castBarFrame:SetScale(cb.scale or 1)
             end
         end,
     }
@@ -937,7 +916,7 @@ end
 -- anchorPos: "left"/"right"/"top"/"bottom"
 -- frame: the bar frame to position
 -- offsetX, offsetY: additional offsets
--- growthDir: "UP", "DOWN", "LEFT", "RIGHT" — which direction the bar grows from the anchor edge
+-- growthDir: "UP", "DOWN", "LEFT", "RIGHT" ï¿½ which direction the bar grows from the anchor edge
 -- growCentered: true = bar centered on anchor edge midpoint; false = bar corner at anchor edge midpoint
 -- Recursively set mouse passthrough on a frame and all its children.
 -- Stores original state on first call so it can be restored.
@@ -982,7 +961,7 @@ local function ApplyBarAnchor(frame, anchorKey, anchorPos, offsetX, offsetY, gro
     growthDir = growthDir or "UP"
     local centered = (growCentered ~= false)
 
-    -- Determine the frame's own anchor point — always the near edge center.
+    -- Determine the frame's own anchor point ï¿½ always the near edge center.
     -- LayoutCDMBar-equivalent offset logic handles non-centered icon positioning.
     --   grow RIGHT -> near edge = LEFT   -> "LEFT"
     --   grow LEFT  -> near edge = RIGHT  -> "RIGHT"
@@ -1078,7 +1057,7 @@ local function ApplyBarAnchor(frame, anchorKey, anchorPos, offsetX, offsetY, gro
 end
 
 -------------------------------------------------------------------------------
---  BuildBars — applies per-element scale, border, colors, text positioning
+--  BuildBars ï¿½ applies per-element scale, border, colors, text positioning
 -------------------------------------------------------------------------------
 
 local function BuildBars()
@@ -1117,7 +1096,7 @@ local function BuildBars()
                 hp.borderSize, hp.borderR, hp.borderG, hp.borderB, hp.borderA)
         end
         if hp.unlockPos and hp.unlockPos.point then
-            -- Position fully managed by unlock mode — no animations, just apply directly
+            -- Position fully managed by unlock mode ï¿½ no animations, just apply directly
             local rp = hp.unlockPos.relPoint or hp.unlockPos.point
             local ow, oh = OrientedSize(hp.width, hp.height, hpOri)
             healthBar:SetScale(hp.scale)
@@ -1193,7 +1172,7 @@ local function BuildBars()
                 pp.borderSize, pp.borderR, pp.borderG, pp.borderB, pp.borderA)
         end
         if pp.unlockPos and pp.unlockPos.point then
-            -- Position fully managed by unlock mode — no animations, just apply directly
+            -- Position fully managed by unlock mode ï¿½ no animations, just apply directly
             local rp = pp.unlockPos.relPoint or pp.unlockPos.point
             local ow, oh = OrientedSize(pp.width, pp.height, ppOri)
             primaryBar:SetScale(pp.scale)
@@ -1359,7 +1338,7 @@ local function BuildBars()
                 secondaryBar:GetStatusBarTexture():SetVertexColor(DARK_FILL_R, DARK_FILL_G, DARK_FILL_B, DARK_FILL_A)
                 secondaryBar._bg:SetColorTexture(DARK_BG_R, DARK_BG_G, DARK_BG_B, DARK_BG_A)
             elseif sp.classColored ~= false then
-                -- classColored is true (default) — use class color, or power color if no class color
+                -- classColored is true (default) ï¿½ use class color, or power color if no class color
                 local cc = CLASS_COLORS[cachedClass]
                 if cc then
                     secondaryBar:GetStatusBarTexture():SetVertexColor(cc[1], cc[2], cc[3], sp.fillA or 1)
@@ -1368,7 +1347,7 @@ local function BuildBars()
                 end
                 secondaryBar._bg:SetColorTexture(sp.bgR, sp.bgG, sp.bgB, sp.bgA)
             else
-                -- classColored explicitly false — use custom fill color
+                -- classColored explicitly false ï¿½ use custom fill color
                 secondaryBar:GetStatusBarTexture():SetVertexColor(sp.fillR, sp.fillG, sp.fillB, sp.fillA)
                 secondaryBar._bg:SetColorTexture(sp.bgR, sp.bgG, sp.bgB, sp.bgA)
             end
@@ -1546,7 +1525,7 @@ local function UpdateHealthBar()
         local cc = CLASS_COLORS[cachedClass]
         if cc then r, g, b = cc[1], cc[2], cc[3] else r, g, b = 0.15, 0.75, 0.30 end
 
-        -- Low health warning removed — color stays class color
+        -- Low health warning removed ï¿½ color stays class color
         healthBar:GetStatusBarTexture():SetVertexColor(r, g, b, 1)
     end
 
@@ -1645,12 +1624,12 @@ local function UpdateSecondaryResource()
     if sp.darkTheme then
         r, g, b = DARK_FILL_R, DARK_FILL_G, DARK_FILL_B
     elseif sp.classColored ~= false then
-        -- classColored is true (default) — use class color
+        -- classColored is true (default) ï¿½ use class color
         local cc = CLASS_COLORS[cachedClass]
         if cc then r, g, b = cc[1], cc[2], cc[3] end
         a = sp.fillA or 1
     else
-        -- classColored explicitly false — custom fill
+        -- classColored explicitly false ï¿½ custom fill
         r, g, b, a = sp.fillR, sp.fillG, sp.fillB, sp.fillA or 1
     end
 
@@ -1808,7 +1787,7 @@ local function UpdateSecondaryResource()
                     pip._fill:Hide()
                 end
             end
-            -- Count text — tostring handles secret values safely
+            -- Count text ï¿½ tostring handles secret values safely
             if sp.showText and secondaryFrame._countText then
                 secondaryFrame._countText:SetText(tostring(cur))
             end
@@ -2262,7 +2241,7 @@ BuildCastBar = function()
     -- Apply settings
     local w, h = cb.width, cb.height
     if cb.unlockPos and cb.unlockPos.point then
-        -- Position managed by unlock mode — only animate size changes
+        -- Position managed by unlock mode ï¿½ only animate size changes
         local rp = cb.unlockPos.relPoint or cb.unlockPos.point
         local px, py = cb.unlockPos.x or 0, cb.unlockPos.y or 0
         local function ApplyCastUnlockTransform()
@@ -2556,7 +2535,7 @@ OnChannelStart = function()
 end
 
 -- Called for UNIT_SPELLCAST_STOP only (normal cast completion).
--- Ignores the event if the castID doesn't match the active cast — this
+-- Ignores the event if the castID doesn't match the active cast ï¿½ this
 -- prevents hiding the bar when a new cast has already started.
 local function OnCastComplete(eventCastID)
     if not castBarFrame then return end
@@ -2657,7 +2636,7 @@ OnEmpowerStart = function()
         end
     end
 
-    -- Stage pips (hash marks) — pixel-perfect positioning
+    -- Stage pips (hash marks) ï¿½ pixel-perfect positioning
     local stages = UnitEmpoweredStagePercentages("player")
     if stages then
         local bar = castBarFrame._bar
@@ -2671,7 +2650,7 @@ OnEmpowerStart = function()
         local pixelSize = 1 / effectiveScale          -- 1 physical pixel in UI units
         local pipWidth = max(pixelSize, floor(2 * effectiveScale + 0.5) / effectiveScale) -- at least 1px, target ~2px
 
-        -- Position a pip at each stage boundary (skip the last — it's the bar end)
+        -- Position a pip at each stage boundary (skip the last ï¿½ it's the bar end)
         local lastOffset = 0
         for i = 1, numStages - 1 do
             local pip = castBarFrame._pips[i]

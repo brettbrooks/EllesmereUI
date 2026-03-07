@@ -3698,7 +3698,7 @@ local function CreateHUD(parent)
         local HOVER_R, HOVER_G, HOVER_B = 1, 1, 1
         local NORMAL_A = 0.50
         local HOVER_A  = 0.90
-        local FONT_SZ  = 22
+        local FONT_SZ  = 26
 
         -- Load saved banner scale
         local bannerUserScale = 1.0
@@ -3802,14 +3802,14 @@ local function CreateHUD(parent)
         end
 
         -- Minus button (left side of banner)
-        minusBtn = MakeScaleBtn("\226\128\147", "LEFT", hudFrame, "TOPLEFT", 30, iconCenterY)
+        minusBtn = MakeScaleBtn("\226\128\147", "LEFT", hudFrame, "TOPLEFT", 10, iconCenterY)
         minusBtn:SetScript("OnClick", function(self)
             if self._isDisabled then return end
             ApplyBannerScale(bannerUserScale - SCALE_STEP)
         end)
 
         -- Plus button (right side of banner)
-        plusBtn = MakeScaleBtn("+", "RIGHT", hudFrame, "TOPRIGHT", -30, iconCenterY)
+        plusBtn = MakeScaleBtn("+", "RIGHT", hudFrame, "TOPRIGHT", -10, iconCenterY)
         plusBtn:SetScript("OnClick", function(self)
             if self._isDisabled then return end
             ApplyBannerScale(bannerUserScale + SCALE_STEP)

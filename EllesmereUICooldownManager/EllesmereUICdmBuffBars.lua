@@ -460,6 +460,7 @@ function ns.BuildTrackedBuffBars()
             local pos = p.tbbPositions[posKey]
             bar:ClearAllPoints()
             if pos and pos.point then
+                if pos.scale then pcall(function() bar:SetScale(pos.scale) end) end
                 bar:SetPoint(pos.point, UIParent, pos.relPoint or pos.point, pos.x or 0, pos.y or 0)
             else
                 bar:SetPoint("CENTER", UIParent, "CENTER", 0, 200 - (i - 1) * ((cfg.height or 24) + 4))
@@ -559,17 +560,27 @@ function ns.RegisterTBBUnlockElements()
                     if f then return f:GetWidth(), f:GetHeight() end
                     return 200, 24
                 end,
-                savePosition = function(_, point, relPoint, x, y)
+                savePosition = function(_, point, relPoint, x, y, scale)
                     local p = ECME.db.profile
                     if not p.tbbPositions then p.tbbPositions = {} end
-                    p.tbbPositions[posKey] = { point = point, relPoint = relPoint, x = x, y = y }
+                    p.tbbPositions[posKey] = { point = point, relPoint = relPoint, x = x, y = y, scale = scale }
+                    local f = tbbFrames[idx]
+                    if f then
+                        if scale then pcall(function() f:SetScale(scale) end) end
+                        f:ClearAllPoints()
+                        f:SetPoint(point, UIParent, relPoint or point, x, y)
+                    end
                     ns.BuildTrackedBuffBars()
                 end,
                 loadPosition = function()
                     local p = ECME.db.profile
                     return p.tbbPositions and p.tbbPositions[posKey]
                 end,
-                getScale = function() return 1.0 end,
+                getScale = function()
+                    local p = ECME.db.profile
+                    local pos = p.tbbPositions and p.tbbPositions[posKey]
+                    return pos and pos.scale or 1.0
+                end,
                 clearPosition = function()
                     local p = ECME.db.profile
                     if p.tbbPositions then p.tbbPositions[posKey] = nil end

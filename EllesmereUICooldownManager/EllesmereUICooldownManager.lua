@@ -1,9 +1,9 @@
--------------------------------------------------------------------------------
+﻿-------------------------------------------------------------------------------
 --  EllesmereUICooldownManager.lua
 --  CDM Look Customization and Cooldown Display
 --  Mirrors Blizzard CDM bars with custom styling, cooldown swipes,
 --  desaturation, active state animations, and per-spec profiles.
---  Does NOT parse secret values ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â works around restricted APIs.
+--  Does NOT parse secret values ├â╞Æ├é┬ó├â┬ó├óΓé¼┼í├é┬¼├â┬ó├óΓÇÜ┬¼├é┬¥ works around restricted APIs.
 -------------------------------------------------------------------------------
 local ADDON_NAME, ns = ...
 local ECME = EllesmereUI.Lite.NewAddon("EllesmereUICooldownManager")
@@ -101,7 +101,7 @@ end
 
 -- Multi-charge spell cache: populated out of combat when values are not secret.
 -- Falls back to SavedVariables for combat /reload scenarios.
--- Maps spellID ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ true for spells with maxCharges > 1
+-- Maps spellID ├â╞Æ├é┬ó├â┬ó├óΓÇÜ┬¼├é┬á├â┬ó├óΓÇÜ┬¼├óΓÇ₧┬ó true for spells with maxCharges > 1
 local _multiChargeSpells = {}
 local _maxChargeCount    = {}  -- [spellID] = maxCharges, populated alongside _multiChargeSpells
 
@@ -117,7 +117,7 @@ local function CacheMultiChargeSpell(spellID)
         _multiChargeSpells[spellID] = result or false
         if result then
             _maxChargeCount[spellID] = charges.maxCharges
-            -- Only persist confirmed charge spells — never persist false so
+            -- Only persist confirmed charge spells ΓÇö never persist false so
             -- stale DB entries don't block re-detection on login or talent swap.
             local db = ECME.db
             if db and db.global then
@@ -153,7 +153,7 @@ local _castCountSpells = {}
 
 local function CacheCastCountSpell(spellID)
     if not spellID or not C_Spell.GetSpellCastCount then return end
-    -- Already confirmed not a cast-count spell — skip
+    -- Already confirmed not a cast-count spell ΓÇö skip
     if _castCountSpells[spellID] == false then return end
     local ok, count = pcall(C_Spell.GetSpellCastCount, spellID)
     if not ok or count == nil then return end
@@ -170,7 +170,7 @@ local function CacheCastCountSpell(spellID)
                 db.global.castCountSpells[spellID] = true
             end
         end
-        -- Don't cache false here — spell may just not have stacks yet
+        -- Don't cache false here ΓÇö spell may just not have stacks yet
     elseif _castCountSpells[spellID] == nil then
         -- Secret (combat): check DB for whether we've ever seen this spell with stacks
         local db = ECME.db
@@ -262,12 +262,12 @@ local _inCombat = false
 --  Called from all update functions to avoid duplicating this logic.
 --
 --  Parameters:
---    icon       ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“ our ECME icon frame (has _cooldown, _tex, _chargeText, etc.)
---    spellID    ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“ resolved spell ID
---    desatOnCD  ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“ boolean, whether to desaturate when on cooldown
---    showCharges ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“ boolean, whether to show charge count text
---    swAlpha    ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“ swipe alpha (number)
---    skipCD     ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“ if true, skip cooldown application (e.g. aura already handled)
+--    icon       ├â╞Æ├é┬ó├â┬ó├óΓé¼┼í├é┬¼├â┬ó├óΓÇÜ┬¼├àΓÇ£ our ECME icon frame (has _cooldown, _tex, _chargeText, etc.)
+--    spellID    ├â╞Æ├é┬ó├â┬ó├óΓé¼┼í├é┬¼├â┬ó├óΓÇÜ┬¼├àΓÇ£ resolved spell ID
+--    desatOnCD  ├â╞Æ├é┬ó├â┬ó├óΓé¼┼í├é┬¼├â┬ó├óΓÇÜ┬¼├àΓÇ£ boolean, whether to desaturate when on cooldown
+--    showCharges ├â╞Æ├é┬ó├â┬ó├óΓé¼┼í├é┬¼├â┬ó├óΓÇÜ┬¼├àΓÇ£ boolean, whether to show charge count text
+--    swAlpha    ├â╞Æ├é┬ó├â┬ó├óΓé¼┼í├é┬¼├â┬ó├óΓÇÜ┬¼├àΓÇ£ swipe alpha (number)
+--    skipCD     ├â╞Æ├é┬ó├â┬ó├óΓé¼┼í├é┬¼├â┬ó├óΓÇÜ┬¼├àΓÇ£ if true, skip cooldown application (e.g. aura already handled)
 --
 --  Returns: durObj (DurationObject|nil)
 -------------------------------------------------------------------------------
@@ -296,10 +296,10 @@ local function ApplySpellCooldown(icon, spellID, desatOnCD, showCharges, swAlpha
     -- _scdShadow  (fed SCD, GCD filtered):
     --   During GCD: cleared so GCD doesn't pollute.
     --   Outside GCD: fed real SCD.
-    --   IsShown()=true  ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ all charges depleted (only outside GCD)
+    --   IsShown()=true  ├â╞Æ├é┬ó├â┬ó├óΓÇÜ┬¼├é┬á├â┬ó├óΓÇÜ┬¼├óΓÇ₧┬ó all charges depleted (only outside GCD)
     --
     -- _ccdShadow  (fed CCD, always live):
-    --   IsShown()=true  ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ recharge active (checked only when SCD not shown)
+    --   IsShown()=true  ├â╞Æ├é┬ó├â┬ó├óΓÇÜ┬¼├é┬á├â┬ó├óΓÇÜ┬¼├óΓÇ₧┬ó recharge active (checked only when SCD not shown)
     --
     -- State: isOnCooldown (0 charges), isRecharging (has charges, recharging)
     ---------------------------------------------------------------------------
@@ -440,7 +440,7 @@ local function ApplySpellCooldown(icon, spellID, desatOnCD, showCharges, swAlpha
                 -- Cast count fallback for spells that accumulate stacks via
                 -- the cast count system rather than auras.
                 -- Only attempt for confirmed cast-count spells (cached OOC).
-                -- In combat, returns secret values — pass directly to SetText.
+                -- In combat, returns secret values ΓÇö pass directly to SetText.
                 CacheCastCountSpell(spellID)
                 if _castCountSpells[spellID] then
                     local ok, count = pcall(C_Spell.GetSpellCastCount, spellID)
@@ -527,7 +527,7 @@ end
 --  Stack count helper (aura applications text)
 --  Hooks blizzChild.Applications Show/Hide to mirror CDM's stack display onto
 --  our _stackText. CDM already handles secret values and only shows Applications
---  when stacks > 1, so we trust its Show/Hide as the gate — no text comparison needed.
+--  when stacks > 1, so we trust its Show/Hide as the gate ΓÇö no text comparison needed.
 -------------------------------------------------------------------------------
 local _stackHookedChildren = {}  -- [blizzChild] = true
 
@@ -541,7 +541,7 @@ local function HookBlizzChildApplications(blizzChild)
     _stackHookedChildren[blizzChild] = true
 
     -- CDM only calls Show() on Applications when stacks > 1, so no text check needed.
-    -- GetText() returns a secret string in combat — pass it directly to SetText,
+    -- GetText() returns a secret string in combat ΓÇö pass it directly to SetText,
     -- WoW renders secret values correctly without comparison.
     hooksecurefunc(appsFrame, "Show", function()
         local ourIcon = blizzChild._ecmeIcon
@@ -589,7 +589,7 @@ local function ApplyStackCount(icon, resolvedSid, auraInstanceID, auraUnit, show
                 end
             end
         end
-        -- Applications frame not showing — fall through to aura lookup below.
+        -- Applications frame not showing ΓÇö fall through to aura lookup below.
         -- Spells like Sheilun's Gift and Mana Tea accumulate stacks as a
         -- player buff but Blizzard's CDM may not populate the Applications
         -- sub-frame for them.
@@ -629,7 +629,7 @@ local function ApplyStackCount(icon, resolvedSid, auraInstanceID, auraUnit, show
     -- Cast count fallback: spells that accumulate stacks via the cast count
     -- system rather than auras (e.g. Sheilun's Gift clouds, Mana Tea).
     -- Only attempt for spells confirmed to use cast counts (cached OOC).
-    -- In combat, GetSpellCastCount returns secret values — pass them directly
+    -- In combat, GetSpellCastCount returns secret values ΓÇö pass them directly
     -- to SetText (FontStrings render secrets natively), same as charge text.
     if resolvedSid and resolvedSid > 0 and C_Spell.GetSpellCastCount then
         CacheCastCountSpell(resolvedSid)
@@ -673,7 +673,7 @@ local DEFAULTS = {
         -- Bar Glows (per-spec)
         spec            = {},
         activeSpecKey   = "0",
-        -- Bar Glows v2 (buff ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ action button glow assignments)
+        -- Bar Glows v2 (buff ├â╞Æ├é┬ó├â┬ó├óΓÇÜ┬¼├é┬á├â┬ó├óΓÇÜ┬¼├óΓÇ₧┬ó action button glow assignments)
         barGlows = {
             enabled = true,
             selectedBar = 1,
@@ -681,7 +681,7 @@ local DEFAULTS = {
             selectedAssignment = 1,
             assignments = {},  -- ["barIdx_btnIdx"] = { {spellID, glowStyle, glowColor, classColor, mode}, ... }
         },
-        -- Buff Bars (legacy ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â kept for migration)
+        -- Buff Bars (legacy ├â╞Æ├é┬ó├â┬ó├óΓé¼┼í├é┬¼├â┬ó├óΓÇÜ┬¼├é┬¥ kept for migration)
         buffBars = {
             enabled     = false,
             width       = 200,
@@ -704,7 +704,7 @@ local DEFAULTS = {
             offsetY     = -200,
         },
         -- Tracked Buff Bars v2 (per-bar buff tracking with individual settings)
-        -- Note: not in defaults — lazy-initialized by ns.GetTrackedBuffBars() to avoid AceDB merge issues
+        -- Note: not in defaults ΓÇö lazy-initialized by ns.GetTrackedBuffBars() to avoid AceDB merge issues
         -- CDM Bars (our replacement for Blizzard CDM)
         cdmBars = {
             enabled = true,
@@ -865,7 +865,7 @@ local function ValidateSpec()
         _specValidated = true
         return
     end
-    -- Mismatch detected — force a full spec switch
+    -- Mismatch detected ΓÇö force a full spec switch
     _specValidated = true
     -- SwitchSpecProfile is defined later; called via ns reference
     if ns.SwitchSpecProfile then
@@ -947,7 +947,7 @@ local function SaveCurrentSpecProfile()
         if key then
             local entry = {}
             if MAIN_BAR_KEYS[key] then
-                -- trackedSpells are session-ephemeral Blizzard cooldownIDs — don't persist them.
+                -- trackedSpells are session-ephemeral Blizzard cooldownIDs ΓÇö don't persist them.
                 -- Persist removedSpells (spellIDs) so user removals survive reloads.
                 entry.extraSpells   = DeepCopy(barData.extraSpells)
                 entry.removedSpells = DeepCopy(barData.removedSpells)
@@ -988,7 +988,7 @@ local function LoadSpecProfile(specKey)
                 if saved then
                     if MAIN_BAR_KEYS[barData.key] then
                         -- trackedSpells are Blizzard-internal cooldownIDs that are
-                        -- session-ephemeral — never restore them across reloads.
+                        -- session-ephemeral ΓÇö never restore them across reloads.
                         -- Always re-snapshot from the live Blizzard CDM on login.
                         barData.trackedSpells = nil
                         barData.extraSpells   = DeepCopy(saved.extraSpells)
@@ -1055,7 +1055,7 @@ local function LoadSpecProfile(specKey)
         if barData.barType == "trinkets" and barData.anchorTo and barData.anchorTo ~= "none" then
             local anchor = barKeySet[barData.anchorTo]
             if anchor and anchor.barType ~= "trinkets" and not MAIN_BAR_KEYS[anchor.key] then
-                -- Anchored to a custom bar ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â check if that bar has spells
+                -- Anchored to a custom bar ├â╞Æ├é┬ó├â┬ó├óΓé¼┼í├é┬¼├â┬ó├óΓÇÜ┬¼├é┬¥ check if that bar has spells
                 local spells = anchor.customSpells
                 if not spells or #spells == 0 then
                     barData.anchorTo = "none"
@@ -1385,7 +1385,7 @@ local function UpdateAllCDMBorders()
 end
 
 -------------------------------------------------------------------------------
---  Native Glow System — engines provided by shared EllesmereUI_Glows.lua
+--  Native Glow System ΓÇö engines provided by shared EllesmereUI_Glows.lua
 --  CDM keeps its own GLOW_STYLES (different scale values) and Start/Stop
 --  wrappers that handle CDM-specific shape glow (icon masks/borders).
 -------------------------------------------------------------------------------
@@ -1489,7 +1489,7 @@ end
 -------------------------------------------------------------------------------
 local PROC_GLOW_STYLE = 6  -- "Modern WoW Glow" flipbook
 
--- Reverse lookup: Blizzard CDM viewer frame name ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ our bar key
+-- Reverse lookup: Blizzard CDM viewer frame name ├â╞Æ├é┬ó├â┬ó├óΓÇÜ┬¼├é┬á├â┬ó├óΓÇÜ┬¼├óΓÇ₧┬ó our bar key
 local _blizzViewerToBarKey = {
     EssentialCooldownViewer = "cooldowns",
     UtilityCooldownViewer   = "utility",
@@ -1620,7 +1620,7 @@ local function InstallProcGlowHooks()
         if spellID and C_SpellActivationOverlay and C_SpellActivationOverlay.IsSpellOverlayed then
             local ok, overlayed = pcall(C_SpellActivationOverlay.IsSpellOverlayed, spellID)
             if ok and overlayed then
-                -- Spell still active ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â suppress Blizzard's alert again and keep our glow
+                -- Spell still active ├â╞Æ├é┬ó├â┬ó├óΓé¼┼í├é┬¼├â┬ó├óΓÇÜ┬¼├é┬¥ suppress Blizzard's alert again and keep our glow
                 if cdmChild.SpellActivationAlert then
                     cdmChild.SpellActivationAlert:SetAlpha(0)
                     cdmChild.SpellActivationAlert:Hide()
@@ -1762,7 +1762,7 @@ end
 -------------------------------------------------------------------------------
 --  Player Frame Discovery
 --  Scans known unit frame addons to find the player's unit frame.
---  Priority: ours ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ ElvUI ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ Dander's party header ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ Blizzard PlayerFrame
+--  Priority: ours ├â╞Æ├é┬ó├â┬ó├óΓÇÜ┬¼├é┬á├â┬ó├óΓÇÜ┬¼├óΓÇ₧┬ó ElvUI ├â╞Æ├é┬ó├â┬ó├óΓÇÜ┬¼├é┬á├â┬ó├óΓÇÜ┬¼├óΓÇ₧┬ó Dander's party header ├â╞Æ├é┬ó├â┬ó├óΓÇÜ┬¼├é┬á├â┬ó├óΓÇÜ┬¼├óΓÇ₧┬ó Blizzard PlayerFrame
 -------------------------------------------------------------------------------
 local PLAYER_FRAME_SOURCES = {
     { addon = "EllesmereUIUnitFrames", global = "EllesmereUIUnitFrames_Player" },
@@ -1776,7 +1776,7 @@ local function FindPlayerUnitFrame()
     -- Invalidate cache when group roster changes (spec swap, join/leave)
     local rosterToken = GetNumGroupMembers()
     if _cachedPlayerFrame and _cachedPlayerFrameRoster == rosterToken then
-        -- Also re-verify the unit attribute — party header children get
+        -- Also re-verify the unit attribute ΓÇö party header children get
         -- reassigned dynamically by the secure group system.
         if _cachedPlayerFrame:IsVisible() then
             local u = _cachedPlayerFrame.GetAttribute and _cachedPlayerFrame:GetAttribute("unit")
@@ -1831,7 +1831,7 @@ end
 local TRINKET_SLOT_1 = 13
 local TRINKET_SLOT_2 = 14
 
--- Racial abilities by internal race name ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ list of spellIDs
+-- Racial abilities by internal race name ├â╞Æ├é┬ó├â┬ó├óΓÇÜ┬¼├é┬á├â┬ó├óΓÇÜ┬¼├óΓÇ₧┬ó list of spellIDs
 -- Entries with a table { spellID, class="CLASS" } are class-restricted.
 local RACE_RACIALS = {
     Scourge            = { 7744 },
@@ -2092,7 +2092,7 @@ local function CDMFrameAnchorPoint(anchorSide, grow, centered)
 end
 
 -------------------------------------------------------------------------------
---  Recursive click-through helper — disables/restores mouse on a frame tree
+--  Recursive click-through helper ΓÇö disables/restores mouse on a frame tree
 -------------------------------------------------------------------------------
 local function SetFrameClickThrough(frame, clickThrough)
     if not frame then return end
@@ -2248,7 +2248,7 @@ BuildCDMBar = function(barIndex)
                 frame:SetPoint(fp, partyFrame, "BOTTOM", oX, oY)
             end
         else
-            -- No party frame found ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â fall back to saved position
+            -- No party frame found ├â╞Æ├é┬ó├â┬ó├óΓé¼┼í├é┬¼├â┬ó├óΓÇÜ┬¼├é┬¥ fall back to saved position
             local pos = p.cdmBarPositions[key]
             if pos and pos.point then
                 ApplyBarPositionCentered(frame, pos, 1, 1, scale)
@@ -2279,7 +2279,7 @@ BuildCDMBar = function(barIndex)
                 frame:SetPoint(fp, playerFrame, "BOTTOM", oX, oY)
             end
         else
-            -- No player frame found ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â fall back to saved position
+            -- No player frame found ├â╞Æ├é┬ó├â┬ó├óΓé¼┼í├é┬¼├â┬ó├óΓÇÜ┬¼├é┬¥ fall back to saved position
             local pos = p.cdmBarPositions[key]
             if pos and pos.point then
                 ApplyBarPositionCentered(frame, pos, 1, 1, scale)
@@ -2316,13 +2316,13 @@ BuildCDMBar = function(barIndex)
             elseif anchorPos == "bottom" then
                 ok = pcall(frame.SetPoint, frame, fp, erbFrame, "BOTTOM", oX, -gap + oY)
             end
-            -- Circular anchor detected — fall back to center
+            -- Circular anchor detected ΓÇö fall back to center
             if not ok then
                 frame:ClearAllPoints()
                 frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
             end
         else
-            -- Resource Bars frame not available ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â fall back to saved position
+            -- Resource Bars frame not available ├â╞Æ├é┬ó├â┬ó├óΓé¼┼í├é┬¼├â┬ó├óΓÇÜ┬¼├é┬¥ fall back to saved position
             local pos = p.cdmBarPositions[key]
             if pos and pos.point then
                 ApplyBarPositionCentered(frame, pos, 1, 1, scale)
@@ -2559,7 +2559,7 @@ local function CreateCDMIcon(barKey, index)
     icon._cooldown = cd
 
     -- Cooldown text styling
-    -- Defer cooldown text font styling (avoids closure per icon ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â uses icon._pendingFont)
+    -- Defer cooldown text font styling (avoids closure per icon ├â╞Æ├é┬ó├â┬ó├óΓé¼┼í├é┬¼├â┬ó├óΓÇÜ┬¼├é┬¥ uses icon._pendingFont)
     if barData.showCooldownText then
         icon._pendingFontPath = GetCDMFont(); icon._pendingFontSize = barData.cooldownFontSize or 12
     end
@@ -2592,7 +2592,7 @@ local function CreateCDMIcon(barKey, index)
     stackText:Hide()
     icon._stackText = stackText
 
-    -- Glow overlay (for active state animations ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â extends 3px beyond icon so pixel glow ants are visible outside border)
+    -- Glow overlay (for active state animations ├â╞Æ├é┬ó├â┬ó├óΓé¼┼í├é┬¼├â┬ó├óΓÇÜ┬¼├é┬¥ extends 3px beyond icon so pixel glow ants are visible outside border)
     local glowOverlay = CreateFrame("Frame", nil, icon)
     glowOverlay:ClearAllPoints()
     glowOverlay:SetPoint("TOPLEFT",     icon, "TOPLEFT",     -3,  3)
@@ -2612,7 +2612,7 @@ local function CreateCDMIcon(barKey, index)
     keybindText:Hide()
     icon._keybindText = keybindText
 
-    -- Tooltip on hover — uses OnUpdate cursor check so the icon stays click-through
+    -- Tooltip on hover ΓÇö uses OnUpdate cursor check so the icon stays click-through
     -- (EnableMouse stays false; we poll IsMouseOver each frame instead)
     local tooltipOverlay = CreateFrame("Frame", nil, icon)
     tooltipOverlay:SetAllPoints(icon)
@@ -2878,8 +2878,6 @@ local function UpdateCustomBarIcons(barKey)
     local barData = barDataByKey[barKey]
     if not barData or not barData.enabled then return end
 
-    -- Clear per-tick aura cache (reuse table to avoid garbage)
-    if frame._auraActiveSet then wipe(frame._auraActiveSet) else frame._auraActiveSet = {} end
 
     local spells = barData.customSpells
     if not spells or #spells == 0 then
@@ -2954,7 +2952,7 @@ local function UpdateCustomBarIcons(barKey)
             end
             -- Propagate charge cache from base to override so talent-swapped spells
             -- show charges correctly even before the override ID has been seen OOC.
-            -- Always attempt direct detection on the final resolvedID first — it may
+            -- Always attempt direct detection on the final resolvedID first ΓÇö it may
             -- have charges even if the base spell doesn't (three-level chain).
             if resolvedID ~= spellID then
                 -- Always try direct detection on the resolved ID (cheapest path)
@@ -2963,7 +2961,7 @@ local function UpdateCustomBarIcons(barKey)
                 -- live Blizzard child for it and mark it as a charge spell so
                 -- ApplySpellCooldown uses the charge display path.
                 if _multiChargeSpells[resolvedID] == nil and _tickBlizzChildCache[resolvedID] then
-                    -- We have a live Blizzard child — treat as charge spell so the
+                    -- We have a live Blizzard child ΓÇö treat as charge spell so the
                     -- charge display path runs. ApplySpellCooldown will call
                     -- GetSpellCharges which may still be secret, but the shadow
                     -- cooldown frames will correctly reflect the charge state.
@@ -2983,7 +2981,7 @@ local function UpdateCustomBarIcons(barKey)
                         end
                     end
                 end
-                -- If still unknown, propagate from base — but only if base is true
+                -- If still unknown, propagate from base ΓÇö but only if base is true
                 if _multiChargeSpells[resolvedID] == nil then
                     CacheMultiChargeSpell(spellID)
                     if _multiChargeSpells[spellID] == true then
@@ -3054,7 +3052,7 @@ local function UpdateCustomBarIcons(barKey)
                     local auraID = blizzChild and blizzChild.auraInstanceID
                     local auraUnit = blizzChild and blizzChild.auraDataUnit or "player"
 
-                    -- Fallback: spell not in any CDM viewer — check _tickBlizzActiveCache
+                    -- Fallback: spell not in any CDM viewer ΓÇö check _tickBlizzActiveCache
                     -- which covers all four viewers scanned each tick.
                     if not isAura then
                         if _tickBlizzActiveCache[resolvedID] or _tickBlizzActiveCache[spellID] then
@@ -3114,24 +3112,13 @@ local function UpdateCustomBarIcons(barKey)
                 ourIcon:Show()
                 visibleCount = visibleCount + 1
 
-                -- Hide buff icons when inactive (aura not active on player) ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â buff bars only
+                -- Hide buff icons when inactive (aura not active on player) ├â╞Æ├é┬ó├â┬ó├óΓé¼┼í├é┬¼├â┬ó├óΓÇÜ┬¼├é┬¥ buff bars only
                 -- Skip during unlock mode so the bar is fully visible for repositioning
                 local isBuffBar = (barKey == "buffs" or barData.barType == "buffs")
                 if barData.hideBuffsWhenInactive and isBuffBar and not EllesmereUI._unlockActive
                    and not (EllesmereUI._mainFrame and EllesmereUI._mainFrame:IsShown()) then
-                    -- Build aura set once per bar update (cached on frame)
-                    if next(frame._auraActiveSet) == nil then
-                        local blizzBuffFrame = _G.BuffIconCooldownViewer
-                        if blizzBuffFrame then
-                            for ci = 1, blizzBuffFrame:GetNumChildren() do
-                                local ch = select(ci, blizzBuffFrame:GetChildren())
-                                if ch and ch.cooldownID and ch.auraInstanceID then
-                                    frame._auraActiveSet[ch.cooldownID] = true
-                                end
-                            end
-                        end
-                    end
-                    if not frame._auraActiveSet[spellID] then
+                    -- Use the per-tick active cache built from all CDM viewers
+                    if not (_tickBlizzActiveCache[resolvedID] or _tickBlizzActiveCache[spellID]) then
                         ourIcon:Hide()
                         visibleCount = visibleCount - 1
                     end
@@ -3288,17 +3275,17 @@ UpdateCDMBarIcons = function(barKey)
             -- Active state animation (consolidated)
             ApplyActiveAnimation(ourIcon, auraHandled, barData, barKey, activeAnim, animR, animG, animB, swAlpha)
 
-            -- Stack count text (consolidated — always enabled)
+            -- Stack count text (consolidated ΓÇö always enabled)
             ApplyStackCount(ourIcon, resolvedSid, blizzIcon.auraInstanceID, blizzIcon.auraDataUnit, true, blizzIcon)
 
             ourIcon:Show()
 
-            -- Hide buff icons when inactive (aura not active) ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â buff bars only
+            -- Hide buff icons when inactive (aura not active) ├â╞Æ├é┬ó├â┬ó├óΓé¼┼í├é┬¼├â┬ó├óΓÇÜ┬¼├é┬¥ buff bars only
             -- Skip during unlock mode so the bar is fully visible for repositioning
             local isBuffBar = (barKey == "buffs" or barData.barType == "buffs")
             if barData.hideBuffsWhenInactive and isBuffBar and not EllesmereUI._unlockActive
                and not (EllesmereUI._mainFrame and EllesmereUI._mainFrame:IsShown()) then
-                if not blizzIcon.auraInstanceID then
+                if not (_tickBlizzActiveCache[resolvedSid]) then
                     ourIcon:Hide()
                 end
             end
@@ -3470,7 +3457,7 @@ local function SnapshotBlizzardCDM(barKey, barData)
         end
     end
 
-    -- Only commit if we got actual children — leave nil so the next tick
+    -- Only commit if we got actual children ΓÇö leave nil so the next tick
     -- retries when Blizzard's CDM viewer hasn't populated yet.
     if #tracked == 0 then return false end
 
@@ -3584,8 +3571,8 @@ local function UpdateTrackedBarIcons(barKey)
         end
 
         -- If cdID still has no Blizzard child after cache rebuild, check if the
-        -- API also knows nothing about it — this means the cdID is stale (e.g.
-        -- talent swap changed Holy Prism → Divine Toll). Force a re-snapshot so
+        -- API also knows nothing about it ΓÇö this means the cdID is stale (e.g.
+        -- talent swap changed Holy Prism ΓåÆ Divine Toll). Force a re-snapshot so
         -- the next tick picks up the new cdIDs from Blizzard's live children.
         if not blizzChild then
             local staleCheck = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
@@ -3698,17 +3685,17 @@ local function UpdateTrackedBarIcons(barKey)
             -- Active state animation (consolidated)
             ApplyActiveAnimation(ourIcon, auraHandled, barData, barKey, activeAnim, animR, animG, animB, swAlpha)
 
-            -- Stack count text (consolidated — always enabled)
+            -- Stack count text (consolidated ΓÇö always enabled)
             ApplyStackCount(ourIcon, resolvedSid, blizzChild.auraInstanceID, blizzChild.auraDataUnit, true, blizzChild)
 
             ourIcon:Show()
 
-            -- Hide buff icons when inactive (aura not active) ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â buff bars only
+            -- Hide buff icons when inactive (aura not active) ├â╞Æ├é┬ó├â┬ó├óΓé¼┼í├é┬¼├â┬ó├óΓÇÜ┬¼├é┬¥ buff bars only
             -- Skip during unlock mode so the bar is fully visible for repositioning
             local isBuffBar = (barKey == "buffs" or barData.barType == "buffs")
             if barData.hideBuffsWhenInactive and isBuffBar and not EllesmereUI._unlockActive
                and not (EllesmereUI._mainFrame and EllesmereUI._mainFrame:IsShown()) then
-                if not blizzChild.auraInstanceID then
+                if not (_tickBlizzActiveCache[resolvedSid]) then
                     ourIcon:Hide()
                 else
                     visCount = visCount + 1
@@ -3717,7 +3704,7 @@ local function UpdateTrackedBarIcons(barKey)
                 visCount = visCount + 1
             end
         else
-            -- No Blizzard child in cache ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â API fallback, always keep visible
+            -- No Blizzard child in cache ├â╞Æ├é┬ó├â┬ó├óΓé¼┼í├é┬¼├â┬ó├óΓÇÜ┬¼├é┬¥ API fallback, always keep visible
             ourIcon._hideGraceStart = nil
             ourIcon._blizzChild = nil
             if ourIcon._procGlowActive then
@@ -4056,12 +4043,12 @@ end
 
 -------------------------------------------------------------------------------
 --  Keybind cache for CDM icons
---  Reads HotKey text directly from action button frames — the same source
+--  Reads HotKey text directly from action button frames ΓÇö the same source
 --  the action bar itself uses, so it's always correct regardless of bar addon.
 --  Deferred if called during combat; fires on PLAYER_REGEN_ENABLED instead.
 -------------------------------------------------------------------------------
 
--- Action bar slot → binding name map. Non-bar-1 entries listed first so that
+-- Action bar slot ΓåÆ binding name map. Non-bar-1 entries listed first so that
 -- if a spell appears on multiple bars, the more specific bar wins over bar 1.
 local _barBindingDefs = {
     { prefix = "MULTIACTIONBAR1BUTTON", startSlot = 61  },  -- bar 2 bottom left
@@ -4247,7 +4234,7 @@ ns.HideBlizzardCDM = HideBlizzardCDM
 local function GetExtraSpells()
     local extras = {}
 
-    -- Trinket slots (dynamic ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â reads currently equipped item)
+    -- Trinket slots (dynamic ├â╞Æ├é┬ó├â┬ó├óΓé¼┼í├é┬¼├â┬ó├óΓÇÜ┬¼├é┬¥ reads currently equipped item)
     for _, slot in ipairs({ TRINKET_SLOT_1, TRINKET_SLOT_2 }) do
         local itemID = GetInventoryItemID("player", slot)
         if itemID then
@@ -4333,7 +4320,7 @@ function ns.GetCDMSpellsForBar(barKey)
         or { 0, 1 }
 
     -- Build set of displayed cooldownIDs (have a Blizzard child).
-    -- For custom bars, barKey has no BLIZZ_CDM_FRAMES entry — fall back to barType.
+    -- For custom bars, barKey has no BLIZZ_CDM_FRAMES entry ΓÇö fall back to barType.
     local displayedSet = {}
     local function ScanViewerIntoDisplayedSet(viewerName)
         local vf = _G[viewerName]
@@ -4535,7 +4522,7 @@ function ns.MoveTrackedSpell(barKey, fromIdx, toIdx)
                 local val = table.remove(combined, fromIdx)
                 table.insert(combined, toIdx, val)
                 -- Split back by position: first tLen slots go to trackedSpells, rest to extraSpells.
-                -- tLen is fixed — the boundary doesn't move when items are reordered.
+                -- tLen is fixed ΓÇö the boundary doesn't move when items are reordered.
                 b.trackedSpells = {}
                 b.extraSpells = {}
                 for i = 1, tLen do b.trackedSpells[i] = combined[i] end
@@ -5012,7 +4999,7 @@ RegisterCDMUnlockElements = function()
 end
 ns.RegisterCDMUnlockElements = RegisterCDMUnlockElements
 
--- Stub: Bar Glows disabled — RequestUpdate is a no-op until re-enabled
+-- Stub: Bar Glows disabled ΓÇö RequestUpdate is a no-op until re-enabled
 local function RequestUpdate() end
 ns.RequestUpdate = RequestUpdate
 
@@ -5101,7 +5088,7 @@ function ECME:OnEnable()
         SetActiveSpec()
         _specValidated = true
     else
-        -- GetSpecialization() not ready yet — leave activeSpecKey as-is,
+        -- GetSpecialization() not ready yet ΓÇö leave activeSpecKey as-is,
         -- ValidateSpec will fix it when SPELLS_CHANGED or PEW fires
         _specValidated = false
     end
@@ -5109,7 +5096,7 @@ function ECME:OnEnable()
     -- Always clear trackedSpells for default bars on every load.
     -- These are session-ephemeral Blizzard cooldownIDs that must be
     -- re-snapshotted from the live CDM viewer each session so talent
-    -- changes (e.g. Holy Prism → Divine Toll) are picked up correctly.
+    -- changes (e.g. Holy Prism ΓåÆ Divine Toll) are picked up correctly.
     if p.cdmBars and p.cdmBars.bars then
         for _, barData in ipairs(p.cdmBars.bars) do
             if MAIN_BAR_KEYS[barData.key] then
@@ -5249,7 +5236,7 @@ local function ScheduleTalentRebuild()
             wipe(db.global.multiChargeSpells)
         end
         -- Clear trackedSpells for main bars so the next snapshot picks up
-        -- the new cdIDs after the talent swap (e.g. Holy Prism → Divine Toll)
+        -- the new cdIDs after the talent swap (e.g. Holy Prism ΓåÆ Divine Toll)
         local p = db and db.profile
         if p and p.cdmBars and p.cdmBars.bars then
             for _, barData in ipairs(p.cdmBars.bars) do
@@ -5259,7 +5246,7 @@ local function ScheduleTalentRebuild()
             end
         end
         -- Clear spell icon cache so custom bars pick up new textures for
-        -- talent-swapped spells (e.g. Holy Prism → Divine Toll icon)
+        -- talent-swapped spells (e.g. Holy Prism ΓåÆ Divine Toll icon)
         wipe(_spellIconCache)
         -- Rebuild keybind cache (talent swap may change action slot contents)
         UpdateCDMKeybinds()
@@ -5289,7 +5276,7 @@ eventFrame:SetScript("OnEvent", function(_, event, unit, updateInfo)
         return
     end
     if event == "TRAIT_CONFIG_UPDATED" or event == "PLAYER_TALENT_UPDATE" or event == "ACTIVE_TALENT_GROUP_CHANGED" then
-        -- Hero talent or loadout change — debounced rebuild
+        -- Hero talent or loadout change ΓÇö debounced rebuild
         ScheduleTalentRebuild()
         return
     end
@@ -5342,7 +5329,7 @@ eventFrame:SetScript("OnEvent", function(_, event, unit, updateInfo)
         return
     end
     if event == "PLAYER_SPECIALIZATION_CHANGED" and unit == "player" then
-        -- Invalidate player frame cache — Dander's party header children
+        -- Invalidate player frame cache ΓÇö Dander's party header children
         -- get reassigned when the secure group system updates after spec swap.
         _cachedPlayerFrame = nil
         _cachedPlayerFrameRoster = 0
@@ -5388,12 +5375,12 @@ SlashCmdList.ECME = function(msg)
 end
 
 -------------------------------------------------------------------------------
---  /cdmstacks debug — dumps stack count data for all visible CDM icons
+--  /cdmstacks debug ΓÇö dumps stack count data for all visible CDM icons
 -------------------------------------------------------------------------------
 SLASH_CDMSTACKS1 = "/cdmstacks"
 
 -------------------------------------------------------------------------------
---  /cdmcustom — debug active state detection for custom bar spells
+--  /cdmcustom ΓÇö debug active state detection for custom bar spells
 -------------------------------------------------------------------------------
 SLASH_CDMCUSTOM1 = "/cdmcustom"
 SlashCmdList.CDMCUSTOM = function()
