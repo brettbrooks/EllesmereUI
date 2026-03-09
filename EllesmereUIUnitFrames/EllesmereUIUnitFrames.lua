@@ -5710,6 +5710,7 @@ function SetupOptionsPanel()
             reloadThrottle:Show()
         end
     end
+    _G._EUF_ReloadFrames = ns.ReloadFrames
     ns.ResolveFontPath = ResolveFontPath
 
     -- Trigger the EllesmereUI options module registration now that ns.db is ready

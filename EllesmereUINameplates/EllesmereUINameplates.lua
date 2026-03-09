@@ -4575,6 +4575,7 @@ do
 
     -- Expose for calling from OnEnable (login time)
     ns._ApplySpecPresetFromDB = ApplySpecPresetFromDB
+    _G._ENP_RefreshAllSettings = function() if ns.RefreshAllSettings then ns.RefreshAllSettings() end end
 end
 
 local npAddon = EllesmereUI.Lite.NewAddon("EllesmereUINameplatesInit")

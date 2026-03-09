@@ -186,14 +186,16 @@ local CDM_SPELL_KEYS = {
     customSpells  = true,
 }
 
---- Deep-copy a CDM profile, stripping all spell-layout data.
---- Removes per-bar spell lists and the top-level specProfiles table.
+--- Deep-copy a CDM profile, stripping all spell-layout data and position data.
+--- Removes per-bar spell lists, specProfiles, cdmBarPositions, and tbbPositions.
 local function DeepCopyCDMStyleOnly(src)
     if type(src) ~= "table" then return src end
     local copy = {}
     for k, v in pairs(src) do
         if k == "specProfiles" then
             -- Omit entirely — spell-layout only
+        elseif k == "cdmBarPositions" or k == "tbbPositions" then
+            -- Omit — position data is per-character
         elseif k == "cdmBars" and type(v) == "table" then
             -- Deep-copy cdmBars but strip spell fields from each bar entry
             local barsCopy = {}
@@ -223,12 +225,14 @@ local function DeepCopyCDMStyleOnly(src)
 end
 
 --- Merge a CDM style-only snapshot back into the live profile,
---- preserving all existing spell-layout fields.
+--- preserving all existing spell-layout fields and position data.
 local function ApplyCDMStyleOnly(profile, snap)
-    -- Apply top-level non-spell keys
+    -- Apply top-level non-spell, non-position keys
     for k, v in pairs(snap) do
         if k == "specProfiles" then
             -- Never overwrite specProfiles from a style snapshot
+        elseif k == "cdmBarPositions" or k == "tbbPositions" then
+            -- Never overwrite position data from a style snapshot
         elseif k == "cdmBars" and type(v) == "table" then
             if not profile.cdmBars then profile.cdmBars = {} end
             for bk, bv in pairs(v) do
@@ -416,6 +420,35 @@ function EllesmereUI.ApplyProfileData(profileData)
             colorsDB[k] = DeepCopy(v)
         end
     end
+end
+
+--- Trigger live refresh on all loaded addons after a profile apply
+function EllesmereUI.RefreshAllAddons()
+    -- ResourceBars
+    if _G._ERB_Apply then _G._ERB_Apply() end
+    -- CDM
+    if _G._ECME_Apply then _G._ECME_Apply() end
+    -- Cursor
+    if _G._ECL_Apply then _G._ECL_Apply() end
+    -- AuraBuffReminders
+    if _G._EABR_RequestRefresh then _G._EABR_RequestRefresh() end
+    -- ActionBars
+    local EAB = EllesmereUI.Lite and EllesmereUI.Lite.GetAddon("EllesmereUIActionBars", true)
+    if EAB then
+        if EAB.ApplyBorders  then EAB:ApplyBorders()  end
+        if EAB.ApplyShapes   then EAB:ApplyShapes()   end
+        if EAB.ApplyFonts    then EAB:ApplyFonts()    end
+        if EAB.ApplyBarOpacity then
+            local bars = EAB.db and EAB.db.profile and EAB.db.profile.bars
+            if bars then
+                for barKey in pairs(bars) do EAB:ApplyBarOpacity(barKey) end
+            end
+        end
+    end
+    -- UnitFrames
+    if _G._EUF_ReloadFrames then _G._EUF_ReloadFrames() end
+    -- Nameplates
+    if _G._ENP_RefreshAllSettings then _G._ENP_RefreshAllSettings() end
 end
 
 --- Apply a partial profile (specific addons only) by merging into active
@@ -633,6 +666,7 @@ function EllesmereUI.SwitchProfile(name)
     if not profileData then return end
     db.activeProfile = name
     EllesmereUI.ApplyProfileData(profileData)
+    EllesmereUI.RefreshAllAddons()
 end
 
 function EllesmereUI.GetActiveProfileName()
@@ -666,6 +700,7 @@ end
 --  in sync with live settings.
 -------------------------------------------------------------------------------
 function EllesmereUI.AutoSaveActiveProfile()
+    if EllesmereUI._profileSaveLocked then return end
     local db = GetProfilesDB()
     local name = db.activeProfile or "Custom"
     db.profiles[name] = EllesmereUI.SnapshotAllAddons()
@@ -711,8 +746,8 @@ end
 -------------------------------------------------------------------------------
 EllesmereUI.POPULAR_PRESETS = {
     -- { name = "Preset Name", description = "Short description", exportString = "!EUI_..." },
-    -- EllesmereUI default is handled specially (applies defaults, no string needed)
-    { name = "EllesmereUI", description = "The default EllesmereUI look", exportString = nil },
+    -- Add exportString once the default profile is exported from a clean install.
+    -- { name = "EllesmereUI", description = "The default EllesmereUI look", exportString = "!EUI_..." },
     { name = "Spin the Wheel", description = "Randomize all settings", exportString = nil },
 }
 
@@ -985,68 +1020,12 @@ end
 -------------------------------------------------------------------------------
 --  Initialize profile system on first login
 --  Creates the "Custom" profile from current settings if none exists.
---  Also handles _pendingPresetReset for the "EllesmereUI (Default)" button.
 -------------------------------------------------------------------------------
 do
     local initFrame = CreateFrame("Frame")
     initFrame:RegisterEvent("PLAYER_LOGIN")
     initFrame:SetScript("OnEvent", function(self)
         self:UnregisterEvent("PLAYER_LOGIN")
-
-        -- Handle pending preset reset (EllesmereUI Default button)
-        -- This wipes all addon SVs so they re-init with built-in defaults,
-        -- then reloads once more.
-        if EllesmereUIDB and EllesmereUIDB._pendingPresetReset == "ellesmereui" then
-            EllesmereUIDB._pendingPresetReset = nil
-            -- Wipe each addon's saved variables so they re-init with defaults
-            for _, entry in ipairs(ADDON_DB_MAP) do
-                local sv = _G[entry.svName]
-                if sv then
-                    if entry.isFlat then
-                        -- Flat DB: wipe all non-internal keys
-                        for k in pairs(sv) do
-                            if type(k) == "string" and not k:match("^_") then
-                                sv[k] = nil
-                            end
-                        end
-                    else
-                        -- AceDB: wipe the profiles table so it re-creates Default
-                        if sv.profiles then
-                            sv.profiles = nil
-                        end
-                    end
-                end
-            end
-            -- Reset fonts and colors to defaults
-            if EllesmereUIDB.fonts then
-                EllesmereUIDB.fonts = nil
-            end
-            if EllesmereUIDB.customColors then
-                EllesmereUIDB.customColors = nil
-            end
-            -- Keep profile metadata but update the active profile snapshot after reload
-            EllesmereUIDB._pendingDefaultSnapshot = true
-            C_Timer.After(0, function() ReloadUI() end)
-            return
-        end
-
-        -- After a default reset reload, snapshot the fresh defaults as active profile
-        if EllesmereUIDB and EllesmereUIDB._pendingDefaultSnapshot then
-            EllesmereUIDB._pendingDefaultSnapshot = nil
-            local presetName = EllesmereUIDB._pendingPresetName or "EllesmereUI"
-            EllesmereUIDB._pendingPresetName = nil
-            C_Timer.After(0.5, function()
-                local db = GetProfilesDB()
-                -- Ensure the preset name is in the order list
-                local found = false
-                for _, n in ipairs(db.profileOrder) do
-                    if n == presetName then found = true; break end
-                end
-                if not found then table.insert(db.profileOrder, 1, presetName) end
-                db.profiles[presetName] = EllesmereUI.SnapshotAllAddons()
-                db.activeProfile = presetName
-            end)
-        end
 
         local db = GetProfilesDB()
         -- On first install, create "Custom" from current (default) settings
@@ -1056,8 +1035,10 @@ do
         -- Ensure Custom profile exists with current settings
         if not db.profiles["Custom"] then
             -- Delay slightly to let all addons initialize their DBs
+            EllesmereUI._profileSaveLocked = true
             C_Timer.After(0.5, function()
                 db.profiles["Custom"] = EllesmereUI.SnapshotAllAddons()
+                EllesmereUI._profileSaveLocked = false
             end)
         end
         -- Ensure Custom is in the order list
@@ -1098,13 +1079,15 @@ do
 end
 
 -------------------------------------------------------------------------------
---  Export Popup: shows a read-only text box with the export string
+--  Shared popup builder for Export and Import
+--  Matches the info popup look: dark bg, thin scrollbar, smooth scroll.
 -------------------------------------------------------------------------------
-function EllesmereUI:ShowExportPopup(exportStr)
-    local POPUP_W, POPUP_H = 520, 260
+local SCROLL_STEP  = 45
+local SMOOTH_SPEED = 12
+
+local function BuildStringPopup(title, subtitle, readOnly, onConfirm, confirmLabel)
+    local POPUP_W, POPUP_H = 520, 310
     local FONT = EllesmereUI.EXPRESSWAY
-    local EG = EllesmereUI.ELLESMERE_GREEN
-    local PP = EllesmereUI.PanelPP
 
     -- Dimmer
     local dimmer = CreateFrame("Frame", nil, UIParent)
@@ -1113,7 +1096,6 @@ function EllesmereUI:ShowExportPopup(exportStr)
     dimmer:EnableMouse(true)
     dimmer:EnableMouseWheel(true)
     dimmer:SetScript("OnMouseWheel", function() end)
-
     local dimTex = dimmer:CreateTexture(nil, "BACKGROUND")
     dimTex:SetAllPoints()
     dimTex:SetColorTexture(0, 0, 0, 0.25)
@@ -1125,63 +1107,224 @@ function EllesmereUI:ShowExportPopup(exportStr)
     popup:SetFrameStrata("FULLSCREEN_DIALOG")
     popup:SetFrameLevel(dimmer:GetFrameLevel() + 10)
     popup:EnableMouse(true)
-
     local bg = popup:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
     bg:SetColorTexture(0.06, 0.08, 0.10, 1)
-    EllesmereUI.MakeBorder(popup, 1, 1, 1, 0.15, PP)
+    EllesmereUI.MakeBorder(popup, 1, 1, 1, 0.15, EllesmereUI.PanelPP)
 
     -- Title
-    local title = EllesmereUI.MakeFont(popup, 18, nil, 1, 1, 1)
-    title:SetPoint("TOP", popup, "TOP", 0, -20)
-    title:SetText("Export Profile")
+    local titleFS = EllesmereUI.MakeFont(popup, 15, "", 1, 1, 1)
+    titleFS:SetPoint("TOP", popup, "TOP", 0, -20)
+    titleFS:SetText(title)
 
     -- Subtitle
-    local sub = EllesmereUI.MakeFont(popup, 12, nil, 1, 1, 1)
-    sub:SetAlpha(0.45)
-    sub:SetPoint("TOP", title, "BOTTOM", 0, -6)
-    sub:SetText("Copy the string below and share it")
+    local subFS = EllesmereUI.MakeFont(popup, 11, "", 1, 1, 1)
+    subFS:SetAlpha(0.45)
+    subFS:SetPoint("TOP", titleFS, "BOTTOM", 0, -4)
+    subFS:SetText(subtitle)
 
-    -- EditBox
-    local editBox = CreateFrame("EditBox", nil, popup)
+    -- ScrollFrame containing the EditBox
+    local sf = CreateFrame("ScrollFrame", nil, popup)
+    sf:SetPoint("TOPLEFT",     popup, "TOPLEFT",     20, -58)
+    sf:SetPoint("BOTTOMRIGHT", popup, "BOTTOMRIGHT", -20, 52)
+    sf:SetFrameLevel(popup:GetFrameLevel() + 1)
+    sf:EnableMouseWheel(true)
+
+    local sc = CreateFrame("Frame", nil, sf)
+    sc:SetWidth(sf:GetWidth() or (POPUP_W - 40))
+    sc:SetHeight(1)
+    sf:SetScrollChild(sc)
+
+    local editBox = CreateFrame("EditBox", nil, sc)
     editBox:SetMultiLine(true)
     editBox:SetAutoFocus(false)
-    editBox:SetFont(FONT, 11, EllesmereUI.GetFontOutlineFlag())
+    editBox:SetFont(FONT, 11, "")
     editBox:SetTextColor(1, 1, 1, 0.75)
-    editBox:SetPoint("TOPLEFT", popup, "TOPLEFT", 20, -70)
-    editBox:SetPoint("BOTTOMRIGHT", popup, "BOTTOMRIGHT", -20, 60)
-    editBox:SetText(exportStr)
-    editBox._readOnlyText = exportStr
-    editBox:SetScript("OnChar", function(self)
-        if self._readOnlyText then
-            self:SetText(self._readOnlyText)
-            self:HighlightText()
+    editBox:SetPoint("TOPLEFT",     sc, "TOPLEFT",     0, 0)
+    editBox:SetPoint("TOPRIGHT",    sc, "TOPRIGHT",   -14, 0)
+    editBox:SetHeight(1)  -- grows with content
+
+    -- Scrollbar track
+    local scrollTrack = CreateFrame("Frame", nil, sf)
+    scrollTrack:SetWidth(4)
+    scrollTrack:SetPoint("TOPRIGHT",    sf, "TOPRIGHT",    -2, -4)
+    scrollTrack:SetPoint("BOTTOMRIGHT", sf, "BOTTOMRIGHT", -2,  4)
+    scrollTrack:SetFrameLevel(sf:GetFrameLevel() + 2)
+    scrollTrack:Hide()
+    local trackBg = scrollTrack:CreateTexture(nil, "BACKGROUND")
+    trackBg:SetAllPoints()
+    trackBg:SetColorTexture(1, 1, 1, 0.02)
+
+    local scrollThumb = CreateFrame("Button", nil, scrollTrack)
+    scrollThumb:SetWidth(4)
+    scrollThumb:SetHeight(60)
+    scrollThumb:SetPoint("TOP", scrollTrack, "TOP", 0, 0)
+    scrollThumb:SetFrameLevel(scrollTrack:GetFrameLevel() + 1)
+    scrollThumb:EnableMouse(true)
+    scrollThumb:RegisterForDrag("LeftButton")
+    scrollThumb:SetScript("OnDragStart", function() end)
+    scrollThumb:SetScript("OnDragStop",  function() end)
+    local thumbTex = scrollThumb:CreateTexture(nil, "ARTWORK")
+    thumbTex:SetAllPoints()
+    thumbTex:SetColorTexture(1, 1, 1, 0.27)
+
+    local scrollTarget = 0
+    local isSmoothing  = false
+    local smoothFrame  = CreateFrame("Frame")
+    smoothFrame:Hide()
+
+    local function UpdateThumb()
+        local maxScroll = tonumber(sf:GetVerticalScrollRange()) or 0
+        if maxScroll <= 0 then scrollTrack:Hide(); return end
+        scrollTrack:Show()
+        local trackH = scrollTrack:GetHeight()
+        local visH   = sf:GetHeight()
+        local ratio  = visH / (visH + maxScroll)
+        local thumbH = math.max(30, trackH * ratio)
+        scrollThumb:SetHeight(thumbH)
+        local scrollRatio = (tonumber(sf:GetVerticalScroll()) or 0) / maxScroll
+        scrollThumb:ClearAllPoints()
+        scrollThumb:SetPoint("TOP", scrollTrack, "TOP", 0, -(scrollRatio * (trackH - thumbH)))
+    end
+
+    smoothFrame:SetScript("OnUpdate", function(_, elapsed)
+        local cur = sf:GetVerticalScroll()
+        local maxScroll = tonumber(sf:GetVerticalScrollRange()) or 0
+        scrollTarget = math.max(0, math.min(maxScroll, scrollTarget))
+        local diff = scrollTarget - cur
+        if math.abs(diff) < 0.3 then
+            sf:SetVerticalScroll(scrollTarget)
+            UpdateThumb()
+            isSmoothing = false
+            smoothFrame:Hide()
+            return
         end
+        sf:SetVerticalScroll(cur + diff * math.min(1, SMOOTH_SPEED * elapsed))
+        UpdateThumb()
     end)
-    editBox:SetScript("OnTextChanged", function(self, userInput)
-        if userInput and self._readOnlyText then
-            self:SetText(self._readOnlyText)
-            self:HighlightText()
-        end
+
+    local function SmoothScrollTo(target)
+        local maxScroll = tonumber(sf:GetVerticalScrollRange()) or 0
+        scrollTarget = math.max(0, math.min(maxScroll, target))
+        if not isSmoothing then isSmoothing = true; smoothFrame:Show() end
+    end
+
+    sf:SetScript("OnMouseWheel", function(self, delta)
+        local maxScroll = tonumber(self:GetVerticalScrollRange()) or 0
+        if maxScroll <= 0 then return end
+        SmoothScrollTo((isSmoothing and scrollTarget or self:GetVerticalScroll()) - delta * SCROLL_STEP)
     end)
-    editBox:SetScript("OnMouseUp", function(self)
-        C_Timer.After(0, function()
-            editBox:SetFocus()
-            editBox:HighlightText()
+    sf:SetScript("OnScrollRangeChanged", function() UpdateThumb() end)
+
+    -- Thumb drag
+    local isDragging, dragStartY, dragStartScroll
+    local function StopDrag()
+        if not isDragging then return end
+        isDragging = false
+        scrollThumb:SetScript("OnUpdate", nil)
+    end
+    scrollThumb:SetScript("OnMouseDown", function(self, button)
+        if button ~= "LeftButton" then return end
+        isSmoothing = false; smoothFrame:Hide()
+        isDragging = true
+        local _, cy = GetCursorPosition()
+        dragStartY      = cy / self:GetEffectiveScale()
+        dragStartScroll = sf:GetVerticalScroll()
+        self:SetScript("OnUpdate", function(self2)
+            if not IsMouseButtonDown("LeftButton") then StopDrag(); return end
+            isSmoothing = false; smoothFrame:Hide()
+            local _, cy2 = GetCursorPosition()
+            cy2 = cy2 / self2:GetEffectiveScale()
+            local trackH   = scrollTrack:GetHeight()
+            local maxTravel = trackH - self2:GetHeight()
+            if maxTravel <= 0 then return end
+            local maxScroll = tonumber(sf:GetVerticalScrollRange()) or 0
+            local newScroll = math.max(0, math.min(maxScroll,
+                dragStartScroll + ((dragStartY - cy2) / maxTravel) * maxScroll))
+            scrollTarget = newScroll
+            sf:SetVerticalScroll(newScroll)
+            UpdateThumb()
         end)
     end)
+    scrollThumb:SetScript("OnMouseUp", function(_, button)
+        if button == "LeftButton" then StopDrag() end
+    end)
 
-    -- Close button
-    local closeBtn = CreateFrame("Button", nil, popup)
-    closeBtn:SetSize(120, 32)
-    closeBtn:SetPoint("BOTTOM", popup, "BOTTOM", 0, 14)
-    closeBtn:SetFrameLevel(popup:GetFrameLevel() + 2)
-    EllesmereUI.MakeStyledButton(closeBtn, "Close", 13,
-        EllesmereUI.RB_COLOURS, function() dimmer:Hide() end)
+    -- Reset on hide
+    dimmer:HookScript("OnHide", function()
+        isSmoothing = false; smoothFrame:Hide()
+        scrollTarget = 0
+        sf:SetVerticalScroll(0)
+        editBox:ClearFocus()
+    end)
+
+    -- Auto-select: click anywhere in the editbox selects all
+    editBox:SetScript("OnMouseUp", function(self)
+        C_Timer.After(0, function() self:SetFocus(); self:HighlightText() end)
+    end)
+    editBox:SetScript("OnEditFocusGained", function(self)
+        self:HighlightText()
+    end)
+
+    if readOnly then
+        editBox:SetScript("OnChar", function(self)
+            self:SetText(self._readOnly or ""); self:HighlightText()
+        end)
+        editBox:SetScript("OnTextChanged", function(self, userInput)
+            if userInput then self:SetText(self._readOnly or ""); self:HighlightText() end
+        end)
+    end
+
+    -- Resize scroll child to fit editbox content
+    local function RefreshHeight()
+        C_Timer.After(0.01, function()
+            local h = editBox:GetNumLines() * (editBox:GetLineHeight() or 14)
+            h = math.max(h, sf:GetHeight() or 100)
+            sc:SetHeight(h + 4)
+            editBox:SetHeight(h + 4)
+            UpdateThumb()
+        end)
+    end
+    editBox:SetScript("OnTextChanged", function(self, userInput)
+        if readOnly and userInput then
+            self:SetText(self._readOnly or ""); self:HighlightText()
+        end
+        RefreshHeight()
+    end)
+
+    -- Buttons
+    if onConfirm then
+        local confirmBtn = CreateFrame("Button", nil, popup)
+        confirmBtn:SetSize(120, 26)
+        confirmBtn:SetPoint("BOTTOMRIGHT", popup, "BOTTOM", -4, 14)
+        confirmBtn:SetFrameLevel(popup:GetFrameLevel() + 2)
+        EllesmereUI.MakeStyledButton(confirmBtn, confirmLabel or "Import", 11,
+            EllesmereUI.WB_COLOURS, function()
+                local str = editBox:GetText()
+                if str and #str > 0 then
+                    dimmer:Hide()
+                    onConfirm(str)
+                end
+            end)
+
+        local cancelBtn = CreateFrame("Button", nil, popup)
+        cancelBtn:SetSize(120, 26)
+        cancelBtn:SetPoint("BOTTOMLEFT", popup, "BOTTOM", 4, 14)
+        cancelBtn:SetFrameLevel(popup:GetFrameLevel() + 2)
+        EllesmereUI.MakeStyledButton(cancelBtn, "Cancel", 11,
+            EllesmereUI.RB_COLOURS, function() dimmer:Hide() end)
+    else
+        local closeBtn = CreateFrame("Button", nil, popup)
+        closeBtn:SetSize(120, 26)
+        closeBtn:SetPoint("BOTTOM", popup, "BOTTOM", 0, 14)
+        closeBtn:SetFrameLevel(popup:GetFrameLevel() + 2)
+        EllesmereUI.MakeStyledButton(closeBtn, "Close", 11,
+            EllesmereUI.RB_COLOURS, function() dimmer:Hide() end)
+    end
 
     -- Dimmer click to close
-    dimmer:SetScript("OnMouseDown", function(self)
-        if not popup:IsMouseOver() then self:Hide() end
+    dimmer:SetScript("OnMouseDown", function()
+        if not popup:IsMouseOver() then dimmer:Hide() end
     end)
 
     -- Escape to close
@@ -1194,6 +1337,22 @@ function EllesmereUI:ShowExportPopup(exportStr)
             self:SetPropagateKeyboardInput(true)
         end
     end)
+
+    return dimmer, editBox, RefreshHeight
+end
+
+-------------------------------------------------------------------------------
+--  Export Popup
+-------------------------------------------------------------------------------
+function EllesmereUI:ShowExportPopup(exportStr)
+    local dimmer, editBox, RefreshHeight = BuildStringPopup(
+        "Export Profile",
+        "Copy the string below and share it",
+        true, nil, nil)
+
+    editBox._readOnly = exportStr
+    editBox:SetText(exportStr)
+    RefreshHeight()
 
     dimmer:Show()
     C_Timer.After(0.05, function()
@@ -1203,103 +1362,18 @@ function EllesmereUI:ShowExportPopup(exportStr)
 end
 
 -------------------------------------------------------------------------------
---  Import Popup: shows an editable text box for pasting import strings
---  onImport(str) is called with the pasted string
+--  Import Popup
 -------------------------------------------------------------------------------
 function EllesmereUI:ShowImportPopup(onImport)
-    local POPUP_W, POPUP_H = 520, 260
-    local FONT = EllesmereUI.EXPRESSWAY
-    local EG = EllesmereUI.ELLESMERE_GREEN
-    local PP = EllesmereUI.PanelPP
-
-    -- Dimmer
-    local dimmer = CreateFrame("Frame", nil, UIParent)
-    dimmer:SetFrameStrata("FULLSCREEN_DIALOG")
-    dimmer:SetAllPoints(UIParent)
-    dimmer:EnableMouse(true)
-    dimmer:EnableMouseWheel(true)
-    dimmer:SetScript("OnMouseWheel", function() end)
-
-    local dimTex = dimmer:CreateTexture(nil, "BACKGROUND")
-    dimTex:SetAllPoints()
-    dimTex:SetColorTexture(0, 0, 0, 0.25)
-
-    -- Popup
-    local popup = CreateFrame("Frame", nil, dimmer)
-    popup:SetSize(POPUP_W, POPUP_H)
-    popup:SetPoint("CENTER", UIParent, "CENTER", 0, 60)
-    popup:SetFrameStrata("FULLSCREEN_DIALOG")
-    popup:SetFrameLevel(dimmer:GetFrameLevel() + 10)
-    popup:EnableMouse(true)
-
-    local bg = popup:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
-    bg:SetColorTexture(0.06, 0.08, 0.10, 1)
-    EllesmereUI.MakeBorder(popup, 1, 1, 1, 0.15, PP)
-
-    -- Title
-    local title = EllesmereUI.MakeFont(popup, 18, nil, 1, 1, 1)
-    title:SetPoint("TOP", popup, "TOP", 0, -20)
-    title:SetText("Import Profile")
-
-    -- Subtitle
-    local sub = EllesmereUI.MakeFont(popup, 12, nil, 1, 1, 1)
-    sub:SetAlpha(0.45)
-    sub:SetPoint("TOP", title, "BOTTOM", 0, -6)
-    sub:SetText("Paste an EllesmereUI profile string below")
-
-    -- EditBox
-    local editBox = CreateFrame("EditBox", nil, popup)
-    editBox:SetMultiLine(true)
-    editBox:SetAutoFocus(false)
-    editBox:SetFont(FONT, 11, EllesmereUI.GetFontOutlineFlag())
-    editBox:SetTextColor(1, 1, 1, 0.75)
-    editBox:SetPoint("TOPLEFT", popup, "TOPLEFT", 20, -70)
-    editBox:SetPoint("BOTTOMRIGHT", popup, "BOTTOMRIGHT", -20, 60)
-    editBox:SetText("")
-
-    -- Import button
-    local importBtn = CreateFrame("Button", nil, popup)
-    importBtn:SetSize(120, 32)
-    importBtn:SetPoint("BOTTOMRIGHT", popup, "BOTTOM", -4, 14)
-    importBtn:SetFrameLevel(popup:GetFrameLevel() + 2)
-    local importBg, importBrd, importLbl = EllesmereUI.MakeStyledButton(
-        importBtn, "Import", 13, EllesmereUI.WB_COLOURS, function()
-            local str = editBox:GetText()
-            if str and #str > 0 then
-                dimmer:Hide()
-                if onImport then onImport(str) end
-            end
-        end)
-
-    -- Cancel button
-    local cancelBtn = CreateFrame("Button", nil, popup)
-    cancelBtn:SetSize(120, 32)
-    cancelBtn:SetPoint("BOTTOMLEFT", popup, "BOTTOM", 4, 14)
-    cancelBtn:SetFrameLevel(popup:GetFrameLevel() + 2)
-    EllesmereUI.MakeStyledButton(cancelBtn, "Cancel", 13,
-        EllesmereUI.RB_COLOURS, function() dimmer:Hide() end)
-
-    -- Dimmer click to close
-    dimmer:SetScript("OnMouseDown", function(self)
-        if not popup:IsMouseOver() then self:Hide() end
-    end)
-
-    -- Escape to close
-    popup:EnableKeyboard(true)
-    popup:SetScript("OnKeyDown", function(self, key)
-        if key == "ESCAPE" then
-            self:SetPropagateKeyboardInput(false)
-            dimmer:Hide()
-        else
-            self:SetPropagateKeyboardInput(true)
-        end
-    end)
+    local dimmer, editBox = BuildStringPopup(
+        "Import Profile",
+        "Paste an EllesmereUI profile string below",
+        false,
+        function(str) if onImport then onImport(str) end end,
+        "Import")
 
     dimmer:Show()
-    C_Timer.After(0.05, function()
-        editBox:SetFocus()
-    end)
+    C_Timer.After(0.05, function() editBox:SetFocus() end)
 end
 
 -------------------------------------------------------------------------------

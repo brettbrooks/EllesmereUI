@@ -3062,12 +3062,14 @@ local function OnEvent(self, event, ...)
         BuildCastBar()
         UpdatePrimaryBar()
         UpdateSecondaryResource()
+        UpdateVisibility()
     elseif event == "UPDATE_SHAPESHIFT_FORM" then
         cachedPrimary = GetPrimaryPowerType()
         cachedSecondary = GetSecondaryResource()
         BuildBars()
         UpdatePrimaryBar()
         UpdateSecondaryResource()
+        UpdateVisibility()
     elseif event == "UNIT_AURA" then
         local unit = ...
         if unit == "player" and cachedSecondary and cachedSecondary.type == "custom" then
